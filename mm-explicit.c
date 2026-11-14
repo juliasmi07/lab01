@@ -6,19 +6,6 @@
  * helper functions. Every function below has a comment describing what it
  * does.
  *
- * Setup (before Checkpoint 1): bring in your Part 1 work.
- *   - Paste the BODIES of your Part 1 mm_malloc, mm_realloc, and mm_calloc
- *     into the matching functions below, replacing their bodies. Look for
- *     the "PASTE" comments.
- *   - In mm_malloc, leave out your call to coalesce_free_blocks.
- *   - If you wrote extra helper functions in Part 1 (other than
- *     coalesce_free_blocks), paste them where marked below the helpers.
- *   - Do NOT paste your old block_t, mm_heap_first, or mm_heap_last: they
- *     are already here.
- *   - With the new block_t, sizeof(block_t) is 24, not 8. Wherever your
- *     pasted code uses sizeof(block_t) to mean "the size of the header",
- *     use sizeof(size_t) instead.
- *
  * Then work through the checkpoints in the writeup in order:
  *
  *   Checkpoint 1: the explicit free list (list_add, list_remove)
@@ -103,28 +90,14 @@ static bool is_allocated(block_t *block) {
     return block->header & 1;
 }
 
-/*
- * Some helpers below are new in Part 2. __attribute__((unused)) stops the
- * compiler from warning that a function is never called. You can remove it
- * once you call the function.
- */
-
 /** get_footer - Returns a pointer to the block's footer: its last 8 bytes. (Checkpoint 2) */
-__attribute__((unused))
 static size_t *get_footer(block_t *block) {
-    (void) block;
-    // TODO (Checkpoint 2)
     return (void *) block + get_size(block) - sizeof(size_t);
-
 }
 
 /** set_footer - Copies the block's header into its footer. (Checkpoint 2) */
-__attribute__((unused))
 static void set_footer(block_t *block) {
-    (void) block;
-    // TODO (Checkpoint 2)
     *get_footer(block) = block->header;
-
 }
 
 /**
@@ -143,10 +116,6 @@ static void set_header(block_t *block, size_t size, bool is_allocated) {
  * (Checkpoint 1)
  */
 static block_t *find_fit(size_t size) {
-    // Traverse the blocks in the heap using the implicit list
-
-
-        // Traverse only the free blocks using the explicit free list
     for (block_t *curr = free_list_head; curr != NULL; curr = curr->next) {
         if (get_size(curr) >= size) {
             return curr;
@@ -165,28 +134,18 @@ static block_t *block_from_payload(void *ptr) {
 }
 
 /** list_add - Adds a free block to the front of the free list. (Checkpoint 1) */
-__attribute__((unused))
 static void list_add(block_t *block) {
-    (void) block;
-    // TODO (Checkpoint 1)
-
     block->next = free_list_head;
     block->prev = NULL;
     if (free_list_head != NULL) {
         free_list_head->prev = block;
     }
     free_list_head = block;
-
-
 }
 
 /** list_remove - Removes a block from the free list. (Checkpoint 1) */
-__attribute__((unused))
 static void list_remove(block_t *block) {
-    (void) block;
-    // TODO (Checkpoint 1)
-
-        if (block->prev != NULL) {
+    if (block->prev != NULL) {
         block->prev->next = block->next;
     } else {
         free_list_head = block->next;
@@ -194,7 +153,6 @@ static void list_remove(block_t *block) {
     if (block->next != NULL) {
         block->next->prev = block->prev;
     }
-
 }
 
 /**
@@ -202,17 +160,11 @@ static void list_remove(block_t *block) {
  *      `block` in memory, found by reading that block's footer. Returns NULL
  *      if `block` is the first block on the heap. (Checkpoint 3)
  */
-__attribute__((unused))
 static block_t *get_prev_block(block_t *block) {
     if (block == mm_heap_first) return NULL;
     size_t prev_size = *((size_t *) block - 1) & ~1;
     return (void *) block - prev_size;
 }
-
-/*
- * PASTE: your own Part 1 helper functions (if any) go here.
- */
-
 
 /**
  * mm_init - Initializes the allocator state
@@ -294,7 +246,14 @@ void *mm_malloc(size_t size) {
  * or mm_realloc that has not been freed yet. mm_free(NULL) does nothing.
  */
 void mm_free(void *ptr) {
+    // mm_free(NULL) does nothing
+    if (ptr == NULL) {
+        return;
+    }
 
+    // Mark the block as unallocated
+    block_t *block = block_from_payload(ptr);
+    set_header(block, get_size(block), false);
 
     block_t *next = (void *) block + get_size(block);
     if (block != mm_heap_last && !is_allocated(next)) {
@@ -325,7 +284,6 @@ void mm_free(void *ptr) {
  * If size is 0, behaves like mm_free(old_ptr) and returns NULL.
  */
 void *mm_realloc(void *old_ptr, size_t size) {
-    // PASTE: replace this body with the body of your Part 1 mm_realloc.
     if (old_ptr == NULL) {
         return mm_malloc(size);
     }
